@@ -129,6 +129,17 @@ cp .env.example .env
 
 Plain messages, links, forwarded audio, and voice notes are all handled automatically.
 
+## Roadmap
+
+> These are directions I'd like to explore — ideas and planned work, not firm commitments. They may change as the project evolves.
+
+- **More lossless sources** — additional providers, made easy by the provider-based architecture.
+- **Spotify support** — read track names from a Spotify playlist link and find downloadable versions.
+- **Smarter archive** — faster search across the personal library and better duplicate handling.
+- **In-chat settings** — change bot settings (like switching the AI model) with a command, without editing files.
+- **Multi-language replies** — bot responses in both English and Persian.
+- **Automated tests** — tests for the providers, so adding a new source doesn't break existing ones.
+
 ## Notes & limitations
 
 - Telegram bots can upload files up to **50 MB** and download up to **20 MB** via the Bot API; larger files are saved locally instead.
