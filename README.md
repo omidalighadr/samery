@@ -1,6 +1,6 @@
 # Samery 🎵
 
-> A private, single-user Telegram music companion — search, download, and enjoy high-quality audio from many sources, with an optional AI chat brain.
+> A private, single-user Telegram bot that finds and archives music at the best quality a source offers, pulls video and transcripts out of almost any link, talks back through a language model, and checks in every night.
 
 <p align="center">
   <img alt="Python" src="https://img.shields.io/badge/Python-3.11%2B-3776AB?logo=python&logoColor=white">
@@ -14,38 +14,49 @@
 
 ## Overview
 
-**Samery** is a personal Telegram bot that turns a single chat into a full music workflow: paste a link or a song name and it finds the best available audio, tags it, embeds cover art and lyrics, and delivers it straight back to you. It also doubles as a warm AI chat companion and a small audio toolbox (voice → MP3, voice → text).
+**Samery** is a personal Telegram bot that turns a single chat into a full media workflow. Send a song name or a link and it finds the best available audio, tags it, embeds cover art and lyrics, and delivers it back. Send almost any video link and it downloads the video (or just the audio), pulls the transcript, summarises it, translates it, or answers questions about it. It also works as an AI chat companion and a small audio toolbox.
 
-It is built to be **private by design** — it answers only its owner, keeps everything on the machine it runs on, and never exposes a public interface.
+It is **private by design** — it answers only its owner, keeps everything on the machine it runs on, and never exposes a public interface.
+
+**27 commands · 14 sources · Audio · Video · Text · Images · runs on my own Mac**
 
 ## Features
 
 ### 🎧 Music
-- **Multi-source search & download** — resolves a song name or a link across several providers and returns the best available quality.
-- **Direct-link grabber** — paste a link from most download sites (Iranian or international); it tries `yt-dlp` first, then falls back to scraping a direct audio link off the page.
-- **Playlist / album support** — expands a set into its individual tracks.
-- **Forward-to-fetch** — forward any audio file and the bot identifies it from its tags and finds a clean copy, so you never have to retype the name.
-- **Rich delivery** — real album covers (not thumbnails), embedded metadata, and lyrics rendered inside the message caption.
-- **Channel workflow** — one-tap **approve / reject** buttons to publish a track to your own channel, with duplicate detection.
-- **Personal archive** — a searchable local library of everything you've downloaded, with a Telegram `file_id` cache for instant re-sends.
+- **Search by name** — send a song title; it searches YouTube first, then offers a button to pull the same track from freely-licensed sources instead.
+- **Any link** — YouTube, SoundCloud, Spotify, musicdel.ir, Pinterest, and any other download site `yt-dlp` can read.
+- **Whole albums & playlists** — paste a set link and it walks the entire thing, labelling each file (e.g. track 4 of 12).
+- **Forward-to-fetch** — forward any audio file and the bot identifies it from its tags and finds a cleaner, higher-quality copy.
+- **Covers, lyrics & dates** — tags files with artwork, lyrics and release dates from LRCLIB, MusicBrainz and the Cover Art Archive.
+- **Searchable archive** — every download lands in a local database you can search, browse, and pull recent items from.
+- **Favourites** — a star button under every track; starred songs come back instantly from Telegram's cache without re-downloading.
+- **Trim a clip** — reply to a track with a time range and it cuts that section out and sends it back.
+- **Channel workflow** — one-tap button to publish a track to your own channel, with duplicate detection.
 
-### 🤖 AI companion
-- **Chat mode** — a toggleable conversational assistant with memory of the conversation.
-- **Pluggable brain** — works with Google Gemini out of the box, or **any OpenAI-compatible endpoint** (just change a few environment variables — no code changes).
-- **Music inside chat** — ask for a song mid-conversation and it fetches it without leaving chat mode (function/tool calling).
-- **Automatic retry & backoff** on rate limits, so quiet moments don't turn into errors.
+### 🎬 Video
+- **Social platforms** — Instagram, TikTok, Twitter/X, Facebook, Reddit, Twitch, Vimeo, Dailymotion and Aparat. Send the link, that's the whole interaction.
+- **Live progress** — reports a percentage while fetching, so it's clear whether a job is moving or stuck.
+- **Audio-only option** — every result offers both the video and just the sound as a music file.
 
-### 🛠️ Audio tools
-- **Voice / audio → MP3** — send a voice message or clip and get a clean MP3 back.
-- **Voice → text** — one-tap transcription of any voice note or audio file.
+### 📝 Text & AI
+- **Full transcript** — extracts YouTube captions (hand-written or auto-generated) and cleans them up.
+- **Summarise** — turns a long video into a handful of paragraphs with one button.
+- **Translate** — runs a long English transcript through in sections and returns readable Persian, with progress.
+- **Ask about a video** — ask a question and it answers from the captions, without you reading the whole thing.
+- **Read the comments** — pulls up to 300 comments and reports what was said and where opinion landed.
+- **Image understanding** — send a photo and it describes what's there and transcribes any text in it.
+- **Voice notes** — transcribes any voice message and converts it into a proper audio file.
+- **Chat mode** — a conversational assistant that can fetch a song mid-conversation without switching modes.
 
 ### ⏰ Automations
-- **Daily suggestion** — a track picked each morning from your favourite artists.
-- **Nightly check-in** — a gentle "how are you?" with a one-tap reply that sends comforting music.
+- **Nightly check-in** — at midnight it asks how you're doing, with a one-tap reply that sends comforting music.
+- **Daily suggestion** — each morning it picks a track from a set of seeds describing your taste.
+- **Follow a channel** — follow a YouTube channel or playlist and every new upload arrives automatically, with buttons for audio, video, transcript and comments.
+- **Podcasts from RSS** — give it a podcast feed URL and it lists episodes ready to pull down.
 
 ## Architecture
 
-Samery uses a small **provider architecture**: every source implements a common `search()` / `tracks()` interface, so new sites can be added in isolation without touching the core.
+Samery uses a small **provider architecture**: every source is its own module implementing a common interface, so adding a new one is a few hours of work rather than a rewrite.
 
 ```
 samery/
@@ -56,10 +67,10 @@ samery/
 ├── library.py          # SQLite: downloads, sent-cache, enrich-cache, posted
 └── providers/
     ├── base.py         # Track / Release data model + Provider protocol
-    ├── ytdlp.py        # SoundCloud / YouTube (+ playlists)
+    ├── ytdlp.py        # YouTube / SoundCloud / social platforms (+ playlists)
     ├── generic.py      # catch-all link grabber (yt-dlp → page scrape)
     ├── musicdel.py     # example direct-download site adapter
-    └── ...             # additional lossless sources
+    └── ...             # additional sources
 ```
 
 **Design principles**
@@ -75,8 +86,12 @@ samery/
 | Media | `yt-dlp`, `ffmpeg`, `mutagen` |
 | Metadata | iTunes Search API, Cover Art Archive, LRCLIB, MusicBrainz |
 | Storage | SQLite |
-| AI | Google Gemini / any OpenAI-compatible API |
+| AI | Any OpenAI-compatible endpoint (tool calling) |
 | Runtime | Python 3.11+, runs as a background service (`launchd` / `systemd`) |
+
+## Sources
+
+YouTube · SoundCloud · Spotify · archive.org · Jamendo · ccMixter · musicdel.ir · Pinterest · Instagram · TikTok · X/Twitter · Aparat · Podcast RSS · + any other link `yt-dlp` supports.
 
 ## Getting started
 
@@ -107,8 +122,8 @@ cp .env.example .env
 | `TELEGRAM_BOT_TOKEN` | Your bot token from BotFather |
 | `ALLOWED_USER_IDS` | Your numeric Telegram user id (the bot answers only you) |
 | `CHANNEL_ID` | (Optional) channel to publish approved tracks to |
-| `LLM_PROVIDER` | `gemini` or `openai` |
-| `GEMINI_API_KEY` / `OPENAI_*` | Credentials for the chosen chat brain |
+| `LLM_PROVIDER` | The chat/AI provider |
+| `*_API_KEY` | Credentials for the chosen provider |
 
 ### Run
 
@@ -121,34 +136,38 @@ cp .env.example .env
 | Command | What it does |
 |---|---|
 | `/search <query>` | Find a track by name |
-| `/chat` | Toggle the AI chat companion on/off |
-| `/library <text>` | Search your downloaded archive |
+| `/yt`, `/sc` | Fetch from a YouTube / SoundCloud link |
+| `/text` | Get a video transcript |
+| `/library`, `/stats`, `/recent` | Browse the downloaded archive |
 | `/lyrics <artist - title>` | Fetch lyrics only |
-| `/suggest` | Send a random suggestion now |
-| `/stats`, `/recent` | Archive stats and recent downloads |
+| `/enrich` | Add artwork, lyrics and dates to a file |
+| `/favs`, `/fav` | Favourites |
+| `/cut 2:30 3:10` | Trim a section out of a track |
+| `/follow`, `/follows` | Follow a channel / list follows |
+| `/rss` | List episodes from a podcast feed |
+| `/checkin`, `/suggest` | Nightly check-in / daily suggestion |
+| `/chat` | Toggle the AI chat companion |
 
-Plain messages, links, forwarded audio, and voice notes are all handled automatically.
+Plain messages, links, forwarded audio, photos and voice notes are all handled automatically.
 
 ## Roadmap
 
 > These are directions I'd like to explore — ideas and planned work, not firm commitments. They may change as the project evolves.
 
 - **More lossless sources** — additional providers, made easy by the provider-based architecture.
-- **Spotify support** — read track names from a Spotify playlist link and find downloadable versions.
 - **Smarter archive** — faster search across the personal library and better duplicate handling.
 - **In-chat settings** — change bot settings (like switching the AI model) with a command, without editing files.
-- **Multi-language replies** — bot responses in both English and Persian.
 - **Automated tests** — tests for the providers, so adding a new source doesn't break existing ones.
 
 ## Notes & limitations
 
 - Telegram bots can upload files up to **50 MB** and download up to **20 MB** via the Bot API; larger files are saved locally instead.
-- Audio from lossy platforms (SoundCloud/YouTube) is only as good as the source — there is no lossless where the source was never lossless.
+- Audio from lossy platforms (SoundCloud/YouTube) is only as good as the source.
 - The AI features depend on the configured provider's availability and quota.
 
 ## Disclaimer
 
-Samery is a **personal-use** project for managing a private music library. It is not intended for redistribution of copyrighted material or any commercial use. Respect the terms of service of the platforms you access and the rights of content owners.
+Samery is a **personal-use** project for managing a private media library. It is not intended for redistribution of copyrighted material or any commercial use. Respect the terms of service of the platforms you access and the rights of content owners.
 
 ## License
 
